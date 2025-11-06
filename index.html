@@ -951,12 +951,6 @@ const resultadoCepEl=document.getElementById('resultado-cep');
 const opcoesFreteEl=document.getElementById('opcoes-frete');
 const valorTotalComFreteEl=document.getElementById('valor-total-com-frete');
 let freteSelecionado = { valor: 0, nome: '' };
-const campoCepEl=document.getElementById('campo-cep');
-const btnCalcularFreteEl=document.getElementById('btn-calcular-frete');
-const resultadoCepEl=document.getElementById('resultado-cep');
-const opcoesFreteEl=document.getElementById('opcoes-frete');
-const valorTotalComFreteEl=document.getElementById('valor-total-com-frete');
-let freteSelecionado = { valor: 0, nome: '' };
 const carrinhoVazioEl=document.getElementById('carrinho-vazio');
 const formularioPedidoEl=document.getElementById('formulario-pedido');
 const btnIniciarPedidoEl=document.getElementById('btn-iniciar-pedido');
@@ -1297,12 +1291,12 @@ function adicionarAoCarrinho(e){
 	        carrinho.push({id,nome,preco,quantidade:1,modelo,imagem_url: itemProduto.imagem_url});
 	    }
 	    
-// 2. Finaliza o carregamento e atualiza o carrinho
-		    renderizarCarrinho();
-freteSelecionado = { valor: 0, nome: '' };
-opcoesFreteEl.style.display = 'none';
-resultadoCepEl.textContent = '';
-campoCepEl.value = '';
+	// 2. Finaliza o carregamento e atualiza o carrinho
+			    renderizarCarrinho();
+	freteSelecionado = { valor: 0, nome: '' };
+	opcoesFreteEl.style.display = 'none';
+	resultadoCepEl.textContent = '';
+	campoCepEl.value = '';
 		    // showNotification(`<i class="fas fa-check-circle"></i> ${nome} adicionado ao carrinho!`); // Linha removida/comentada conforme solicitado
 		    
 		    // NOVO: Abre o modal do carrinho automaticamente
@@ -1509,13 +1503,10 @@ submenuLinks.forEach(link => {
     });
 });
 
-// Inicializa o site\ncarregarProdutos();\nrenderizarTotalComFrete(0);
-renderizarCarrinho();
-freteSelecionado = { valor: 0, nome: '' };
-opcoesFreteEl.style.display = 'none';
-resultadoCepEl.textContent = '';
-campoCepEl.value = '';
-startBannerSlider();
+// Inicializa o site
+	carregarProdutos();
+	renderizarCarrinho();
+	startBannerSlider();
 
 // ADICIONADO: Inicializa os listeners para o clique no produto
 // Já está sendo chamado dentro de carregarProdutos() para garantir que os elementos existam.
