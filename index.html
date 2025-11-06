@@ -357,23 +357,6 @@ body{background-color:var(--cinza-fundo);line-height:1.6}
     border-top: 1px solid #eee;
     position: relative;
 }
-.item-carrinho-conteudo {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    flex-grow: 1;
-}
-.imagem-carrinho-miniatura {
-    width: 60px;
-    height: 60px;
-    object-fit: contain;
-    border: 1px solid #eee;
-    border-radius: 4px;
-    flex-shrink: 0;
-}
-.item-carrinho-detalhes {
-    flex-grow: 1;
-}
 .item-carrinho span:nth-child(1) { flex: 3; margin-right: 15px; font-size: 0.95em; min-width: 120px;}
 .item-carrinho span:nth-child(2) { flex: 0 0 40px; text-align: center; font-weight: bold;}
 .item-carrinho strong { flex: 1; text-align: right; min-width: 60px;}
@@ -992,17 +975,12 @@ btnIniciarPedidoEl.disabled=false;
 carrinho.forEach(item=>{
 const subtotal=item.preco*item.quantidade;
 total+=subtotal;
-cconst itemEl=document.createElement('div');
+const itemEl=document.createElement('div');
 itemEl.classList.add('item-carrinho');
 itemEl.innerHTML=`
-<div class="item-carrinho-conteudo">
-    <img src="${item.imagem}" alt="${item.nome}" class="imagem-carrinho-miniatura">
-    <div class="item-carrinho-detalhes">
-        <p>${item.nome} (${item.modelo}) x ${item.quantidade}</p>
-        <p>Preço Unitário: R$ ${item.preco.toFixed(2).replace('.',',')}</p>
-    </div>
-</div>
-/strong>
+<span>${item.nome} (${item.modelo})</span>
+<span>${item.quantidade}x</span>
+<strong>R$ ${subtotal.toFixed(2).replace('.',',')}</strong>
 <button class="btn-remover" data-id="${item.id}">&times;</button>
 `;
 itensCarrinhoEl.appendChild(itemEl);
@@ -1025,13 +1003,13 @@ function adicionarAoCarrinho(e){
 	    const id=parseInt(botao.dataset.id);
 	    const nome=botao.dataset.nome;
 	    const preco=parseFloat(botao.dataset.preco);
-	    const imagem=botao.dataset.imagem; // NOVO: Pega a URL da imagem
 	    const modelo=botao.dataset.modelo;
 	
 	    const itemExistente=carrinho.find(i=>i.id===id);
 	    if(itemExistente){
-	        itemExisteitem.quantidade++;	    }else{
-	        carrinho.push({id,nome,preco,quantidade:1,modelo,imagem}); // NOVO: Adiciona a imagem ao item do carrinho
+	        itemExistente.quantidade++;
+	    }else{
+	        carrinho.push({id,nome,preco,quantidade:1,modelo});
 	    }
 	    
 // 2. Finaliza o carregamento e atualiza o carrinho
