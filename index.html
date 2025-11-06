@@ -1049,36 +1049,37 @@ body{background-color:var(--cinza-fundo);line-height:1.6}
 	
 	
 	function renderizarCarrinho(){
-	    // Lógica de reset do frete ao renderizar o carrinho
-	    freteSelecionado = null;
+	    // Lógica de reset do frete ao renderizar o carrinho SOMENTE se o carrinho estiver vazio
 	    const campoCep = document.getElementById('campo-cep');
 	    const enderecoInfo = document.getElementById('endereco-info');
 	    const opcoesFreteDiv = document.getElementById('opcoes-frete');
 	    const freteStatus = document.getElementById('frete-status');
 	    
+	    // Continua com a lógica original
+	
+		    
+		itensCarrinhoEl.innerHTML='';
+		let total=0;
+	if(carrinho.length===0){
+	carrinhoVazioEl.style.display='block';
+	btnIniciarPedidoEl.disabled=true;
+	    // Reseta o frete se o carrinho estiver vazio
+	    freteSelecionado = null;
 	    if (campoCep) campoCep.value = '';
 	    if (enderecoInfo) enderecoInfo.textContent = '';
 	    if (opcoesFreteDiv) opcoesFreteDiv.style.display = 'none';
 	    if (freteStatus) freteStatus.textContent = '';
 	    const radios = document.getElementsByName('opcao-frete');
 	    radios.forEach(radio => radio.checked = false);
-	    
-	    // Continua com a lógica original
-	    
-	itensCarrinhoEl.innerHTML='';
-	let total=0;
-	if(carrinho.length===0){
-	carrinhoVazioEl.style.display='block';
-	btnIniciarPedidoEl.disabled=true;
 	}else{
 	carrinhoVazioEl.style.display='none';
 	btnIniciarPedidoEl.disabled=false;
-	carrinho.forEach(item=>{
-	const subtotal=item.preco*item.quantidade;
-	total+=subtotal;
-	const itemEl=document.createElement('div');
-	itemEl.classList.add('item-carrinho');
-	itemEl.innerHTML=`
+		carrinho.forEach(item=>{
+		const subtotal=item.preco*item.quantidade;
+		total+=subtotal;
+		const itemEl=document.createElement('div');
+		itemEl.classList.add('item-carrinho');
+		itemEl.innerHTML=`
 		<div class="item-info">
 		<img src="${item.imagem_url}" alt="${item.nome}" class="carrinho-img">
 		<span>${item.nome} (${item.modelo})</span>
@@ -1087,9 +1088,9 @@ body{background-color:var(--cinza-fundo);line-height:1.6}
 		<strong>R$ ${subtotal.toFixed(2).replace('.',',')}</strong>
 		<button class="btn-remover" data-id="${item.id}">&times;</button>
 		`;
-	itensCarrinhoEl.appendChild(itemEl);
-	});
-	itensCarrinhoEl.querySelectorAll('.btn-remover').forEach(b=>b.addEventListener('click',removerDoCarrinho));
+		itensCarrinhoEl.appendChild(itemEl);
+		});
+		itensCarrinhoEl.querySelectorAll('.btn-remover').forEach(b=>b.addEventListener('click',removerDoCarrinho));
 	}
 	valorTotalEl.textContent=`R$ ${(total + (freteSelecionado ? parseFloat(freteSelecionado.valor) : 0)).toFixed(2).replace('.',',')}`;
 	contadorCarrinhoEl.textContent=carrinho.reduce((a,i)=>a+i.quantidade,0);
@@ -1288,12 +1289,14 @@ body{background-color:var(--cinza-fundo);line-height:1.6}
 	    }
 	    
 	    // Adiciona o estado de loading
-	    btnCalcularFrete.classList.add('loading');
-	    btnCalcularFrete.textContent = '';
-	    enderecoInfo.textContent = 'Buscando endereço...';
-	    opcoesFreteDiv.style.display = 'none';
-	    freteStatus.textContent = '';
-	    freteSelecionado = null;
+	btnCalcularFrete.classList.add('loading');
+	btnCalcularFrete.textContent = '';
+	enderecoInfo.textContent = 'Buscando endereço...';
+	opcoesFreteDiv.style.display = 'none';
+	freteStatus.textContent = '';
+	freteSelecionado = null;
+	// Garante que o total é atualizado para 0 antes de calcular o frete
+	valorTotalEl.textContent=`R$ ${carrinho.reduce((a,i)=>a+(i.preco*i.quantidade),0).toFixed(2).replace('.',',')}`;
 	    
 	    try {
 	        const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
@@ -1319,7 +1322,11 @@ body{background-color:var(--cinza-fundo);line-height:1.6}
 	        // Remove o estado de loading
 	        btnCalcularFrete.classList.remove('loading');
 	        btnCalcularFrete.textContent = 'Calcular';
-	        renderizarCarrinho(); // Atualiza o total (que será 0 se não houver frete selecionado)
+	        // Não chama renderizarCarrinho() aqui, pois a seleção do frete fará isso
+	        // Apenas atualiza o total para refletir o valor do carrinho sem frete, caso a busca falhe
+	        if (!freteSelecionado) {
+	            valorTotalEl.textContent=`R$ ${carrinho.reduce((a,i)=>a+(i.preco*i.quantidade),0).toFixed(2).replace('.',',')}`;
+	        }
 	    }
 	});
 	
@@ -1332,7 +1339,10 @@ body{background-color:var(--cinza-fundo);line-height:1.6}
 	            prazo: e.target.dataset.prazo
 	        };
 	        freteStatus.textContent = `Opção selecionada: ${freteSelecionado.descricao} (R$ ${freteSelecionado.valor.replace('.', ',')})`;
-	        renderizarCarrinho(); // Recalcula o total com o frete
+	        
+	        // Atualiza o total sem chamar renderizarCarrinho() para evitar loop de reset
+	        const totalItens = carrinho.reduce((a,i)=>a+(i.preco*i.quantidade),0);
+	        valorTotalEl.textContent=`R$ ${(totalItens + parseFloat(freteSelecionado.valor)).toFixed(2).replace('.',',')}`;
 	    }
 	});
 	
@@ -1340,6 +1350,7 @@ body{background-color:var(--cinza-fundo);line-height:1.6}
 	
 	// Inicialização de Listeners
 	document.getElementById('abrir-carrinho').addEventListener('click',()=>{
+	renderizarCarrinho(); // Garante que o carrinho está atualizado antes de abrir
 	modalCarrinhoEl.style.display='block';
 	formularioPedidoEl.style.display='none';
 	btnIniciarPedidoEl.style.display='block';
