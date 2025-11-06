@@ -825,6 +825,30 @@ body{background-color:var(--cinza-fundo);line-height:1.6}
                 </div>
             </div>
             <!-- FIM NOVO: Área de Cálculo de Frete -->
+            <!-- NOVO: Área de Cálculo de Frete -->
+            <div id="calculo-frete-area" style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #eee;">
+                <h4 style="color: var(--azul-principal); margin-bottom: 10px;">Calcular Frete</h4>
+                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <input type="text" id="campo-cep" placeholder="Digite o CEP (ex: 01001-000)" maxlength="9" style="flex-grow: 1; padding: 10px; border: 1px solid #ccc; border-radius: 5px;">
+                    <button id="btn-calcular-frete" class="btn-azul-escuro" style="width: auto; padding: 10px 15px; margin-top: 0;">Calcular</button>
+                </div>
+                <div id="resultado-cep" style="font-size: 0.9em; color: #666; margin-bottom: 10px;"></div>
+                <div id="opcoes-frete" style="display: none;">
+                    <h5 style="color: var(--azul-principal); margin-top: 15px; margin-bottom: 10px;">Opções de Envio</h5>
+                    <div class="opcao-frete" style="border: 1px solid #ccc; padding: 10px; margin-bottom: 8px; border-radius: 5px; cursor: pointer; transition: all 0.2s;">
+                        <input type="radio" name="frete-opcao" id="frete-envio" value="39.00" data-nome="Envio" style="margin-right: 10px;">
+                        <label for="frete-envio" style="font-weight: 600; cursor: pointer;">Envio</label>
+                        <span style="float: right;">R$ 39,00 - Entrega: Amanhã</span>
+                    </div>
+                    <div class="opcao-frete" style="border: 1px solid #ccc; padding: 10px; margin-bottom: 8px; border-radius: 5px; cursor: pointer; transition: all 0.2s;">
+                        <input type="radio" name="frete-opcao" id="frete-instalacao" value="55.00" data-nome="Envio + Instalação" style="margin-right: 10px;">
+                        <label for="frete-instalacao" style="font-weight: 600; cursor: pointer;">Envio + Instalação</label>
+                        <span style="float: right;">R$ 55,00 - Entrega: Amanhã</span>
+                    </div>
+                    <div class="resumo-total" style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px;">Total com Frete: <span id="valor-total-com-frete">R$ 0,00</span></div>
+                </div>
+            </div>
+            <!-- FIM NOVO: Área de Cálculo de Frete -->
 <div id="formulario-pedido" class="formulario-pedido" style="display:none;">
 <h5>Detalhes para Envio do Pedido via WhatsApp</h5>
 <input type="text" id="campo-nome" placeholder="Seu Nome Completo" required>
@@ -927,6 +951,12 @@ const resultadoCepEl=document.getElementById('resultado-cep');
 const opcoesFreteEl=document.getElementById('opcoes-frete');
 const valorTotalComFreteEl=document.getElementById('valor-total-com-frete');
 let freteSelecionado = { valor: 0, nome: '' };
+const campoCepEl=document.getElementById('campo-cep');
+const btnCalcularFreteEl=document.getElementById('btn-calcular-frete');
+const resultadoCepEl=document.getElementById('resultado-cep');
+const opcoesFreteEl=document.getElementById('opcoes-frete');
+const valorTotalComFreteEl=document.getElementById('valor-total-com-frete');
+let freteSelecionado = { valor: 0, nome: '' };
 const carrinhoVazioEl=document.getElementById('carrinho-vazio');
 const formularioPedidoEl=document.getElementById('formulario-pedido');
 const btnIniciarPedidoEl=document.getElementById('btn-iniciar-pedido');
@@ -944,6 +974,201 @@ const totalSlides = 3;
 const menuHamburguerEl = document.getElementById('menu-hamburguer');
 const menuMobileContainerEl = document.getElementById('menu-mobile-container');
 const submenuLinks = document.querySelectorAll('#menu-mobile .has-submenu > a');
+
+// Função para formatar o CEP (00000-000)
+function formatarCEP(cep) {
+    cep = cep.replace(/\D/g, ''); // Remove tudo o que não é dígito
+    if (cep.length > 5) {
+        cep = cep.replace(/^(\d{5})(\d)/, '$1-$2');
+    }
+    return cep;
+}
+
+// Função para calcular o total com frete
+function calcularTotalComFrete() {
+    const totalCarrinho = carrinho.reduce((acc, item) => acc + (item.preco * item.quantidade), 0);
+    const totalComFrete = totalCarrinho + freteSelecionado.valor;
+    valorTotalComFreteEl.textContent = `R$ ${totalComFrete.toFixed(2).replace('.', ',')}`;
+}
+
+// Função para buscar o endereço pelo CEP (ViaCEP)
+async function buscarEndereco(cep) {
+    resultadoCepEl.innerHTML = 'Buscando endereço...';
+    opcoesFreteEl.style.display = 'none';
+    freteSelecionado = { valor: 0, nome: '' };
+    calcularTotalComFrete(); // Reseta o total com frete
+
+    try {
+        const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+        const data = await response.json();
+
+        if (data.erro) {
+            resultadoCepEl.innerHTML = '<span style="color: red;">CEP não encontrado.</span>';
+            return null;
+        }
+
+        const endereco = `${data.logradouro}, ${data.bairro} - ${data.localidade}/${data.uf}`;
+        resultadoCepEl.innerHTML = `<strong>Endereço:</strong> ${endereco}`;
+        opcoesFreteEl.style.display = 'block';
+        
+        // Adiciona o listener para as opções de frete
+        document.querySelectorAll('input[name="frete-opcao"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                freteSelecionado.valor = parseFloat(this.value);
+                freteSelecionado.nome = this.dataset.nome;
+                calcularTotalComFrete();
+            });
+        });
+
+        // Seleciona a primeira opção por padrão (ou nenhuma, se preferir)
+        const primeiroFrete = document.getElementById('frete-envio');
+        if (primeiroFrete) {
+            primeiroFrete.checked = true;
+            freteSelecionado.valor = parseFloat(primeiroFrete.value);
+            freteSelecionado.nome = primeiroFrete.dataset.nome;
+            calcularTotalComFrete();
+        }
+
+        return endereco;
+
+    } catch (error) {
+        console.error('Erro ao buscar CEP:', error);
+        resultadoCepEl.innerHTML = '<span style="color: red;">Erro ao buscar CEP. Tente novamente.</span>';
+        return null;
+    }
+}
+
+// Event Listener para o botão de calcular frete
+btnCalcularFreteEl.addEventListener('click', () => {
+    const cep = campoCepEl.value.replace(/\D/g, '');
+    if (cep.length === 8) {
+        buscarEndereco(cep);
+    } else {
+        resultadoCepEl.innerHTML = '<span style="color: orange;">Por favor, digite um CEP válido com 8 dígitos.</span>';
+        opcoesFreteEl.style.display = 'none';
+        freteSelecionado = { valor: 0, nome: '' };
+        calcularTotalComFrete();
+    }
+});
+
+// Event Listener para formatar o CEP enquanto o usuário digita
+campoCepEl.addEventListener('input', function() {
+    this.value = formatarCEP(this.value);
+});
+
+// Atualiza a função renderizarCarrinho para incluir o cálculo do total com frete
+function renderizarCarrinho() {
+    itensCarrinhoEl.innerHTML = '';
+    let total = 0;
+
+    if (carrinho.length === 0) {
+        carrinhoVazioEl.style.display = 'block';
+        formularioPedidoEl.style.display = 'none';
+        btnIniciarPedidoEl.style.display = 'none';
+        document.getElementById('calculo-frete-area').style.display = 'none'; // Esconde a área de frete se o carrinho estiver vazio
+    } else {
+        carrinhoVazioEl.style.display = 'none';
+        formularioPedidoEl.style.display = 'none';
+        btnIniciarPedidoEl.style.display = 'block';
+        document.getElementById('calculo-frete-area').style.display = 'block'; // Mostra a área de frete
+    }
+
+    carrinho.forEach(item => {
+        const itemEl = document.createElement('div');
+        itemEl.classList.add('item-carrinho');
+        const subtotal = item.preco * item.quantidade;
+        total += subtotal;
+
+        itemEl.innerHTML = `
+            <span>${item.nome}</span>
+            <span>x${item.quantidade}</span>
+            <strong>R$ ${subtotal.toFixed(2).replace('.', ',')}</strong>
+            <button class="btn-remover" data-id="${item.id}">&times;</button>
+        `;
+        itensCarrinhoEl.appendChild(itemEl);
+    });
+
+    valorTotalEl.textContent = `R$ ${total.toFixed(2).replace('.', ',')}`;
+    
+    // NOVO: Atualiza o total com frete sempre que o carrinho é renderizado
+    calcularTotalComFrete(); 
+
+    // Adiciona listeners para remover itens
+    document.querySelectorAll('.btn-remover').forEach(btn => {
+        btn.addEventListener('click', function() {
+            removerDoCarrinho(parseInt(this.dataset.id));
+        });
+    });
+}
+
+// Atualiza a função finalizarPedido para incluir o frete selecionado
+function finalizarPedido() {
+    if (carrinho.length === 0) {
+        showNotification('O carrinho está vazio!');
+        return;
+    }
+
+    if (freteSelecionado.valor === 0) {
+        showNotification('Por favor, calcule e selecione uma opção de frete.');
+        return;
+    }
+
+    // Esconde o botão de iniciar pedido e mostra o formulário
+    btnIniciarPedidoEl.style.display = 'none';
+    formularioPedidoEl.style.display = 'block';
+}
+
+// Atualiza a função enviarPedidoWhatsApp para incluir o frete e o endereço
+function enviarPedidoWhatsApp() {
+    const nome = document.getElementById('campo-nome').value;
+    const whatsapp = document.getElementById('campo-whatsapp').value.replace(/\D/g, '');
+    const endereco = resultadoCepEl.textContent.replace('Endereço: ', '');
+
+    if (!nome || whatsapp.length < 10) {
+        mensagemStatusEl.textContent = 'Por favor, preencha seu nome e um WhatsApp válido.';
+        mensagemStatusEl.style.color = 'red';
+        return;
+    }
+
+    let mensagem = `Olá, meu nome é ${nome} e gostaria de fazer o seguinte pedido:\n\n`;
+    let total = 0;
+
+    carrinho.forEach(item => {
+        const subtotal = item.preco * item.quantidade;
+        total += subtotal;
+        mensagem += `- ${item.nome} (x${item.quantidade}) - R$ ${subtotal.toFixed(2).replace('.', ',')}\n`;
+    });
+
+    // Adiciona as informações de frete
+    mensagem += `\n--- Frete ---\n`;
+    mensagem += `Opção: ${freteSelecionado.nome}\n`;
+    mensagem += `Valor: R$ ${freteSelecionado.valor.toFixed(2).replace('.', ',')}\n`;
+    mensagem += `Endereço de Entrega: ${endereco}\n`;
+    
+    const totalFinal = total + freteSelecionado.valor;
+    mensagem += `\n*TOTAL FINAL (Produtos + Frete): R$ ${totalFinal.toFixed(2).replace('.', ',')}*\n\n`;
+    mensagem += `Meu WhatsApp para contato é: ${whatsapp}`;
+
+    const url = `https://api.whatsapp.com/send?phone=5511960720059&text=${encodeURIComponent(mensagem)}`;
+    window.open(url, '_blank');
+
+    mensagemStatusEl.textContent = 'Pedido enviado! Você será redirecionado para o WhatsApp.';
+    mensagemStatusEl.style.color = 'green';
+    
+    // Limpa o carrinho após o envio
+    carrinho = [];
+    renderizarCarrinho();
+    
+    // Oculta o formulário e mostra o botão de iniciar pedido (que estará oculto se o carrinho estiver vazio)
+    formularioPedidoEl.style.display = 'none';
+    btnIniciarPedidoEl.style.display = 'block';
+}
+
+// Adiciona o listener para o botão de finalizar pedido
+btnIniciarPedidoEl.addEventListener('click', finalizarPedido);
+
+// Adiciona o listener para o botão de enviar pedido via WhatsApp
+btnFinalizarWhatsAppEl.addEventListener('click', enviarPedidoWhatsApp);
 
 function showNotification(message) {
     notificationSnackbarEl.classList.remove('show');
