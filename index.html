@@ -1,6 +1,7 @@
 
 
 
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -690,7 +691,29 @@ body{background-color:var(--cinza-fundo);line-height:1.6}
     }
 }
 /* --- FIM DO CSS MOBILE --- */
-</style>
+.item-carrinho {
+	    display: flex;
+	    align-items: center;
+	    justify-content: space-between;
+	    padding: 10px 0;
+	    border-bottom: 1px solid #eee;
+	}
+	.item-carrinho:last-child {
+	    border-bottom: none;
+	}
+	.item-info {
+	    display: flex;
+	    align-items: center;
+	    flex-grow: 1;
+	}
+	.carrinho-img {
+	    width: 50px;
+	    height: 50px;
+	    object-fit: contain;
+	    margin-right: 10px;
+	    border-radius: 3px;
+	}
+	</style>
 </head>
 <body>
 <div id="pagina-container">
@@ -978,11 +1001,14 @@ total+=subtotal;
 const itemEl=document.createElement('div');
 itemEl.classList.add('item-carrinho');
 itemEl.innerHTML=`
-<span>${item.nome} (${item.modelo})</span>
-<span>${item.quantidade}x</span>
-<strong>R$ ${subtotal.toFixed(2).replace('.',',')}</strong>
-<button class="btn-remover" data-id="${item.id}">&times;</button>
-`;
+	<div class="item-info">
+	<img src="${item.imagem_url}" alt="${item.nome}" class="carrinho-img">
+	<span>${item.nome} (${item.modelo})</span>
+	</div>
+	<span>${item.quantidade}x</span>
+	<strong>R$ ${subtotal.toFixed(2).replace('.',',')}</strong>
+	<button class="btn-remover" data-id="${item.id}">&times;</button>
+	`;
 itensCarrinhoEl.appendChild(itemEl);
 });
 itensCarrinhoEl.querySelectorAll('.btn-remover').forEach(b=>b.addEventListener('click',removerDoCarrinho));
@@ -1001,6 +1027,8 @@ function adicionarAoCarrinho(e){
 	// Simula o tempo de carregamento (1 segundo)
 	setTimeout(() => {
 	    const id=parseInt(botao.dataset.id);
+		    const itemProduto = catalogoPecas.find(p => p.id === id);
+		    if (!itemProduto) return; // Garante que o produto existe
 	    const nome=botao.dataset.nome;
 	    const preco=parseFloat(botao.dataset.preco);
 	    const modelo=botao.dataset.modelo;
@@ -1009,7 +1037,7 @@ function adicionarAoCarrinho(e){
 	    if(itemExistente){
 	        itemExistente.quantidade++;
 	    }else{
-	        carrinho.push({id,nome,preco,quantidade:1,modelo});
+	        carrinho.push({id,nome,preco,quantidade:1,modelo,imagem_url: itemProduto.imagem_url});
 	    }
 	    
 // 2. Finaliza o carregamento e atualiza o carrinho
